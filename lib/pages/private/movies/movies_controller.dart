@@ -18,6 +18,20 @@ class MovieController {
     }
   }
 
+  Future<String> getMovieTitle(int movieId) async {
+    try {
+      final List<Map<String, dynamic>> moviesMapList =
+          await _dbConnect.query('movies', 'id = ?', [movieId]);
+      if (moviesMapList.isNotEmpty) {
+        return moviesMapList.first['title'];
+      } else {
+        throw Exception('Movie with ID $movieId not found');
+      }
+    } catch (e) {
+      throw Exception('Error getting movie title: $e');
+    }
+  }
+
   Future<void> deleteMovie(int movieId) async {
     await _dbConnect.deleteMovie(movieId);
   }

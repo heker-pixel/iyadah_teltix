@@ -6,6 +6,7 @@ import './pages/profile_page.dart';
 import './pages/search_page.dart';
 import './comps/animate_route.dart';
 import 'package:url_launcher/url_launcher.dart'; // Import url_launcher package
+import './pages/watchlist_page.dart';
 
 Widget buildPage() {
   return CurvedNavBarWithSlide();
@@ -19,11 +20,110 @@ class CurvedNavBarWithSlide extends StatefulWidget {
 class _CurvedNavBarWithSlideState extends State<CurvedNavBarWithSlide> {
   int _page = 0;
   PageController _pageController = PageController();
-  final Uri _url = Uri.parse('https://flutter.dev');
+  final Uri _url = Uri.parse('https://maps.app.goo.gl/Cy2yzNjrRhXeLonR8');
 
   Future<void> _launchUrl() async {
     if (!await launchUrl(_url)) {
       throw Exception('Could not launch $_url');
+    }
+  }
+
+  Future<void> _GoToMap(BuildContext context) async {
+    bool goToMap = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20.0)),
+          ),
+          titlePadding: EdgeInsets.all(0),
+          contentPadding: EdgeInsets.all(0),
+          actionsPadding: EdgeInsets.all(0),
+          title: Container(
+            padding: EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.yellow.shade700,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20.0),
+                topRight: Radius.circular(20.0),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.question_mark,
+                  color: Colors.white,
+                  size: 40,
+                ),
+                SizedBox(height: 16.0),
+                Text(
+                  'Confirm Navigation',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20.0,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          content: Container(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Do you want to navigate to the map?',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18.0),
+            ),
+          ),
+          actions: [
+            Container(
+              padding: EdgeInsets.only(bottom: 16.0),
+              width: double.infinity,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.grey.shade900,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: Text('Cancel'),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.yellow.shade700,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: Text('Confirm'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (goToMap == true) {
+      _launchUrl();
     }
   }
 
@@ -77,13 +177,23 @@ class _CurvedNavBarWithSlideState extends State<CurvedNavBarWithSlide> {
                 ));
               },
             ),
+            IconButton(
+              icon: Icon(Icons.favorite),
+              color: Colors.grey.shade200,
+              onPressed: () {
+                Navigator.of(context).push(animatedDart(
+                  Offset(1.0, 0.0),
+                  WatchlistPage(),
+                ));
+              },
+            ),
             Container(
               margin: EdgeInsets.only(right: 10.0),
               child: IconButton(
                 icon: Icon(Icons.location_on),
                 color: Colors.grey.shade200,
                 onPressed: () {
-                  _launchUrl(); // Launch maps when tapped
+                  _GoToMap(context);
                 },
               ),
             ),

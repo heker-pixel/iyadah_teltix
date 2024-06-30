@@ -177,7 +177,7 @@ class CardWithBorder extends StatelessWidget {
       children: [
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
+            border: Border.all(color: Colors.grey.withOpacity(0.65)),
             borderRadius: BorderRadius.circular(5),
           ),
           child: ListTile(

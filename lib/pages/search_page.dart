@@ -19,8 +19,8 @@ class _SearchPageState extends State<SearchPage> {
   void _performSearch(String query) {
     if (query.isEmpty) {
       setState(() {
-        _searchResultsMovies = null;
-        _searchResultsFigure = null;
+        _searchResultsMovies = _dbConnect.getAllMovies();
+        _searchResultsFigure = _dbConnect.getAllFigures();
       });
     } else {
       setState(() {
@@ -52,7 +52,7 @@ class _SearchPageState extends State<SearchPage> {
               fillColor: Colors.white,
               contentPadding:
                   EdgeInsets.symmetric(vertical: 3.5, horizontal: 12.0),
-              hintText: 'Search Movies',
+              hintText: 'Search Movies / Figure',
               hintStyle: TextStyle(
                 color: Colors.grey.shade900,
                 fontSize: 14.0,
@@ -101,133 +101,135 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildSearchResultsMovies() {
     if (_searchResultsMovies == null) {
-      return _buildSearchMoviesWidget();
-    } else {
-      return FutureBuilder<List<Map<String, dynamic>>>(
-        future: _searchResultsMovies,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+      _searchResultsMovies = _dbConnect.getAllMovies();
+    }
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _searchResultsMovies,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else {
+          final movies = snapshot.data ?? [];
+          if (movies.isEmpty) {
+            return _buildNoMoviesWidget();
           } else {
-            final movies = snapshot.data ?? [];
-            if (movies.isEmpty) {
-              return _buildNoMoviesWidget();
-            } else {
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-                child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // Number of items per row
-                    childAspectRatio:
-                        0.7, // Adjust based on item height and width
-                    crossAxisSpacing: 8.0,
-                    mainAxisSpacing: 8.0,
-                  ),
-                  itemCount: movies.length,
-                  itemBuilder: (context, index) {
-                    final Uint8List? poster = movies[index]['poster'];
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                DetailsPage(movieId: movies[index]['id']),
-                          ),
-                        );
-                      },
-                      child: GridTile(
-                        child: poster != null
-                            ? Image.memory(poster, fit: BoxFit.cover)
-                            : Image.asset('assets/placeholder.png',
-                                fit: BoxFit.cover),
-                        footer: GridTileBar(
-                          backgroundColor: Colors.black54,
-                          subtitle: Center(
-                            child: Text(
-                              'Click to View More',
-                              style: TextStyle(
-                                fontSize: 14.0,
-                                fontWeight:
-                                    FontWeight.w500, // Increased font weight
-                              ),
-                              overflow: TextOverflow.ellipsis,
+            return Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+              child: GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, // Number of items per row
+                  childAspectRatio:
+                      0.7, // Adjust based on item height and width
+                  crossAxisSpacing: 8.0,
+                  mainAxisSpacing: 8.0,
+                ),
+                itemCount: movies.length,
+                itemBuilder: (context, index) {
+                  final Uint8List? poster = movies[index]['poster'];
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              DetailsPage(movieId: movies[index]['id']),
+                        ),
+                      );
+                    },
+                    child: GridTile(
+                      child: poster != null
+                          ? Image.memory(poster, fit: BoxFit.cover)
+                          : Image.asset('assets/placeholder.png',
+                              fit: BoxFit.cover),
+                      footer: GridTileBar(
+                        backgroundColor: Colors.black54,
+                        subtitle: Center(
+                          child: Text(
+                            'Click to View More',
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              fontWeight:
+                                  FontWeight.w500, // Increased font weight
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
-              );
-            }
+                    ),
+                  );
+                },
+              ),
+            );
           }
-        },
-      );
-    }
+        }
+      },
+    );
   }
 
   Widget _buildSearchResultsFigure() {
     if (_searchResultsFigure == null) {
-      return _buildNoMoviesWidget();
-    } else {
-      return FutureBuilder<List<Map<String, dynamic>>>(
-        future: _searchResultsFigure,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else {
-            final figures = snapshot.data ?? [];
-            if (figures.isEmpty) {
-              return _buildNoMoviesWidget();
-            } else {
-              return ListView.builder(
-                itemCount: figures.length,
-                itemBuilder: (context, index) {
-                  final String? cast = figures[index]['cast'];
-                  final String? director = figures[index]['director'];
-                  final String? producer = figures[index]['producer'];
-
-                  List<Widget> jobWidgets = [];
-
-                  if (cast != null) {
-                    jobWidgets.add(_buildJobWidget('Cast', cast));
-                  }
-                  if (director != null) {
-                    jobWidgets.add(_buildJobWidget('Director', director));
-                  }
-                  if (producer != null) {
-                    jobWidgets.add(_buildJobWidget('Producer', producer));
-                  }
-
-                  final String? movieName = figures[index]['title'];
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ListTile(
-                        title: Text(movieName ?? 'Unknown Movie'),
-                      ),
-                      ...jobWidgets,
-                    ],
-                  );
-                },
-              );
-            }
-          }
-        },
-      );
+      _searchResultsFigure = _dbConnect.getAllFigures();
     }
-  }
 
-  Widget _buildJobWidget(String job, String name) {
-    return ListTile(
-      title: Text(name),
-      subtitle: Text('Job: $job'),
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _searchResultsFigure,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else {
+          final figures = snapshot.data ?? [];
+          if (figures.isEmpty) {
+            return _buildNoFiguresWidget();
+          } else {
+            // Group results by name and concatenate jobs
+            final Map<String, List<String>> groupedFigures = {};
+            figures.forEach((figure) {
+              final String? name = figure['name'];
+              final String? job = figure['job'];
+              if (name != null && job != null) {
+                groupedFigures.putIfAbsent(name, () => []).add(job);
+              }
+            });
+
+            return ListView.builder(
+              itemCount: groupedFigures.length,
+              itemBuilder: (context, index) {
+                final name = groupedFigures.keys.elementAt(index);
+                final jobs = groupedFigures[name];
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors
+                        .grey.shade900, // Set the background color to black
+                    foregroundColor:
+                        Colors.white, // Set the text color to white
+                    child: Text(
+                      name[0]
+                          .toUpperCase(), // Display the first character of the name in uppercase
+                      style: TextStyle(
+                          fontWeight:
+                              FontWeight.bold), // Set font weight to bold
+                    ),
+                  ),
+                  title: Text(
+                    name,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold), // Set font weight to bold
+                  ),
+                  subtitle: jobs != null && jobs.isNotEmpty
+                      ? Text('${jobs.join(', ')}')
+                      : null,
+                );
+              },
+            );
+          }
+        }
+      },
     );
   }
 
@@ -250,7 +252,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _buildSearchMoviesWidget() {
+  Widget _buildNoFiguresWidget() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -262,7 +264,7 @@ class _SearchPageState extends State<SearchPage> {
         ),
         SizedBox(height: 10),
         Text(
-          "Search movies you want to know",
+          "No figures available",
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ],

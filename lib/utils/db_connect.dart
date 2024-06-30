@@ -13,7 +13,7 @@ class DBConnect {
 
   Future<Database> _initDB() async {
     try {
-      String path = join(await getDatabasesPath(), 'kajshdjkadhsidhaiu.db');
+      String path = join(await getDatabasesPath(), 'teltix12909090123.db');
       return await openDatabase(
         path,
         version: 1,
@@ -72,12 +72,113 @@ class DBConnect {
         FOREIGN KEY(transaction_id) REFERENCES transactions(id)
       )
     ''');
+
     await db.execute('''
-    CREATE TABLE IF NOT EXISTS banners (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      image BLOB NOT NULL
-    )
-  ''');
+      CREATE TABLE IF NOT EXISTS banners (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        image BLOB NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS watchlist (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        movie_id INTEGER NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(movie_id) REFERENCES movies(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS ratings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        movie_id INTEGER NOT NULL,
+        rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+        review TEXT,
+        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(movie_id) REFERENCES movies(id)
+      )
+    ''');
+  }
+
+  // CRUD methods for watchlist
+  Future<int> addToWatchlist(int userId, int movieId) async {
+    final db = await database;
+    return await db
+        .insert('watchlist', {'user_id': userId, 'movie_id': movieId});
+  }
+
+  Future<int> removeFromWatchlist(int userId, int movieId) async {
+    final db = await database;
+    return await db.delete(
+      'watchlist',
+      where: 'user_id = ? AND movie_id = ?',
+      whereArgs: [userId, movieId],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getWatchlist(int userId) async {
+    final db = await database;
+    return await db.query(
+      'watchlist',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+  }
+
+  // CRUD methods for ratings
+  Future<int> addRating(
+      int userId, int movieId, int rating, String? review) async {
+    final db = await database;
+    return await db.insert('ratings', {
+      'user_id': userId,
+      'movie_id': movieId,
+      'rating': rating,
+      'review': review,
+    });
+  }
+
+  Future<int> updateRating(
+      int userId, int movieId, int rating, String? review) async {
+    final db = await database;
+    return await db.update(
+      'ratings',
+      {
+        'rating': rating,
+        'review': review,
+      },
+      where: 'user_id = ? AND movie_id = ?',
+      whereArgs: [userId, movieId],
+    );
+  }
+
+  Future<int> deleteRating(int userId, int movieId) async {
+    final db = await database;
+    return await db.delete(
+      'ratings',
+      where: 'user_id = ? AND movie_id = ?',
+      whereArgs: [userId, movieId],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getRatingsForMovie(int movieId) async {
+    final db = await database;
+    return await db.query(
+      'ratings',
+      where: 'movie_id = ?',
+      whereArgs: [movieId],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getUserRatings(int userId) async {
+    final db = await database;
+    return await db.query(
+      'ratings',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
   }
 
   Future<int> insert(String table, Map<String, dynamic> data) async {
@@ -151,28 +252,66 @@ class DBConnect {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getAllFigures() async {
+    final db = await database;
+    final List<Map<String, dynamic>> castResults = await db.rawQuery(
+      'SELECT DISTINCT `cast` AS name FROM movies WHERE `cast` IS NOT NULL AND `cast` != ""',
+    );
+    final List<Map<String, dynamic>> producerResults = await db.rawQuery(
+      'SELECT DISTINCT producer AS name FROM movies WHERE producer IS NOT NULL AND producer != ""',
+    );
+    final List<Map<String, dynamic>> directorResults = await db.rawQuery(
+      'SELECT DISTINCT director AS name FROM movies WHERE director IS NOT NULL AND director != ""',
+    );
+
+    final List<Map<String, dynamic>> allResults = [
+      ...castResults.map((result) => {'name': result['name'], 'job': 'Cast'}),
+      ...producerResults
+          .map((result) => {'name': result['name'], 'job': 'Producer'}),
+      ...directorResults
+          .map((result) => {'name': result['name'], 'job': 'Director'}),
+    ];
+
+    return allResults;
+  }
+
+  Future<int?> getUserIdByEmail(String email) async {
+    final db = await database;
+    List<Map<String, dynamic>> results = await db.query(
+      'users',
+      columns: ['id'],
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+    if (results.isNotEmpty) {
+      return results.first['id'] as int?;
+    }
+    return null;
+  }
+
   Future<List<Map<String, dynamic>>> searchFigure(String query) async {
     final db = await database;
-    final List<Map<String, dynamic>> castResults = await db.query(
-      'movies',
-      where: ' "cast" LIKE ?',
-      whereArgs: ['%$query%'],
+    final List<Map<String, dynamic>> castResults = await db.rawQuery(
+      'SELECT DISTINCT `cast` AS name FROM movies WHERE `cast` LIKE ?',
+      ['%$query%'],
     );
-    final List<Map<String, dynamic>> producerResults = await db.query(
-      'movies',
-      where: 'producer LIKE ?',
-      whereArgs: ['%$query%'],
+    final List<Map<String, dynamic>> producerResults = await db.rawQuery(
+      'SELECT DISTINCT producer AS name FROM movies WHERE producer LIKE ?',
+      ['%$query%'],
     );
-    final List<Map<String, dynamic>> directorResults = await db.query(
-      'movies',
-      where: 'director LIKE ?',
-      whereArgs: ['%$query%'],
+    final List<Map<String, dynamic>> directorResults = await db.rawQuery(
+      'SELECT DISTINCT director AS name FROM movies WHERE director LIKE ?',
+      ['%$query%'],
     );
-    // Merge the results from cast, producer, and director
-    final List<Map<String, dynamic>> allResults = []
-      ..addAll(castResults)
-      ..addAll(producerResults)
-      ..addAll(directorResults);
+
+    final List<Map<String, dynamic>> allResults = [
+      ...castResults.map((result) => {'name': result['name'], 'job': 'Cast'}),
+      ...producerResults
+          .map((result) => {'name': result['name'], 'job': 'Producer'}),
+      ...directorResults
+          .map((result) => {'name': result['name'], 'job': 'Director'}),
+    ];
+
     return allResults;
   }
 
@@ -186,6 +325,25 @@ class DBConnect {
         })
         .toSet()
         .toList();
+  }
+
+  Future<List<WatchlistItem>> getWatchlistWithDetails(int userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> results = await db.rawQuery('''
+    SELECT watchlist.id, watchlist.movie_id as movieId, movies.title, movies.poster
+    FROM watchlist
+    INNER JOIN movies ON watchlist.movie_id = movies.id
+    WHERE watchlist.user_id = ?
+  ''', [userId]);
+
+    return results.map((result) {
+      return WatchlistItem(
+        id: result['id'],
+        movieId: result['movieId'],
+        title: result['title'],
+        poster: result['poster'],
+      );
+    }).toList();
   }
 
   Future<Uint8List?> getImage(int movieId) async {
@@ -257,4 +415,18 @@ class DBConnect {
       throw Exception('Error getting banner image: $e');
     }
   }
+}
+
+class WatchlistItem {
+  final int id;
+  final int movieId;
+  final String title;
+  final Uint8List? poster;
+
+  WatchlistItem({
+    required this.id,
+    required this.movieId,
+    required this.title,
+    required this.poster,
+  });
 }

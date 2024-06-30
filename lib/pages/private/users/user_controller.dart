@@ -23,6 +23,20 @@ class UserController {
     );
   }
 
+  Future<String> getUserEmail(int userId) async {
+    try {
+      final List<Map<String, dynamic>> usersMapList =
+          await _dbConnect.query('users', 'id = ?', [userId]);
+      if (usersMapList.isNotEmpty) {
+        return usersMapList.first['email'];
+      } else {
+        throw Exception('User with ID $userId not found');
+      }
+    } catch (e) {
+      throw Exception('Error getting user email: $e');
+    }
+  }
+
   Future<int> deleteUser(int id) async {
     return await _dbConnect.delete(
       'users',

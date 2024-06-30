@@ -5,6 +5,7 @@ import 'ticket_controller.dart';
 class TransactionController {
   final DBConnect _dbConnect = DBConnect();
   final TicketController _ticketController = TicketController();
+
   Future<List<Transaction>> getAllTransactions() async {
     final List<Map<String, dynamic>> transactionsData =
         await _dbConnect.queryAll('transactions');
@@ -40,5 +41,19 @@ class TransactionController {
   Future<List<Map<String, dynamic>>> getETicketsForTransaction(
       int transactionId) async {
     return await _ticketController.getETicketsForTransaction(transactionId);
+  }
+
+  Future<List<Transaction>> searchTransactions(String query) async {
+    try {
+      final db = await _dbConnect.database;
+      final List<Map<String, dynamic>> searchData = await db.query(
+        'transactions',
+        where: 'transaction_date LIKE ?',
+        whereArgs: ['%$query%'],
+      );
+      return searchData.map((data) => Transaction.fromJson(data)).toList();
+    } catch (e) {
+      throw Exception('Error searching transactions: $e');
+    }
   }
 }

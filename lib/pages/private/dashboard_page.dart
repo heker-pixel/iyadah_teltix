@@ -160,7 +160,7 @@ class NavigationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(
             8), // Optional: Adjust border radius as needed
         border: Border.all(
-          color: Colors.grey.withOpacity(0.5), // Border color and opacity
+          color: Colors.grey.withOpacity(0.65), // Border color and opacity
           width: 1, // Border width
         ),
       ),

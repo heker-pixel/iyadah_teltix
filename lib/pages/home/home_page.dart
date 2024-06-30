@@ -331,24 +331,21 @@ class _HomePageState extends State<HomePage> {
                                 children: [
                                   Icon(
                                     Icons.movie,
-                                    color:
-                                        isActive ? Colors.white : Colors.black,
+                                    color: Colors.white,
                                   ), // Icon to the left of the genre
                                   SizedBox(
                                       width: 4), // Adjust spacing as needed
                                   Text(
                                     genre,
                                     style: TextStyle(
-                                      color: isActive
-                                          ? Colors.white
-                                          : Colors.black,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ],
                               ),
                               backgroundColor: isActive
-                                  ? Colors.grey.shade900
-                                  : Colors.grey[300],
+                                  ? Colors.yellow.shade700
+                                  : Colors.grey.shade900,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8.0),
                                 side: BorderSide(color: Colors.transparent),
